@@ -1,12 +1,13 @@
 package test
 
 import (
-	"ARP4G/arp"
-	"ARP4G/repoimpl"
 	"context"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/zhengchengdong/ARP4G/arp"
+	"github.com/zhengchengdong/ARP4G/repoimpl"
 )
 
 //业务开发测试

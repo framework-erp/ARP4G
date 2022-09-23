@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"ARP4G/arp"
-	"ARP4G/util"
+	"github.com/zhengchengdong/ARP4G/arp"
+	"github.com/zhengchengdong/ARP4G/util"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"

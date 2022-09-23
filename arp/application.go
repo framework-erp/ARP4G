@@ -1,8 +1,9 @@
 package arp
 
 import (
-	"ARP4G/copy"
 	"reflect"
+
+	"github.com/zhengchengdong/ARP4G/copy"
 )
 
 var repositories map[string]innerRepository = make(map[string]innerRepository)
