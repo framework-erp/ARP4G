@@ -143,20 +143,6 @@ func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, entity *T)
 	if err = repository.store.Save(ctx, entityId, entity); err != nil {
 		panic("PutIfAbsent error: " + err.Error())
 	}
-	ok, err = repository.mutexes.NewAndLock(ctx, entityId)
-	if err != nil {
-		panic("Take error: " + err.Error())
-	}
-	if !ok {
-		//补锁不成功那就是有人抢先补锁，那么这里就需要再去获得锁了
-		ok, _, err = repository.mutexes.Lock(ctx, entityId)
-		if err != nil {
-			panic("Take error: " + err.Error())
-		}
-		if !ok {
-			panic("Take error: can not 'Take' since entity is occupied")
-		}
-	}
 	TakenFromRepository(ctx, repository.entityType, entityId, entity)
 	return entity, true
 }
