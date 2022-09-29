@@ -119,7 +119,7 @@ func (repository *RepositoryImpl[T]) Take(ctx context.Context, id any) *T {
 func (repository *RepositoryImpl[T]) Put(ctx context.Context, entity *T) {
 	entityId := repository.getEntityId(entity)
 	if EntityAvailableInProcess(ctx, repository.entityType, entityId) {
-		panic("can not 'Save' since entity already exists")
+		panic("can not 'Put' since entity already exists")
 	}
 	PutNewEntityToProcess(ctx, repository.entityType, entityId, entity)
 }
@@ -134,7 +134,7 @@ func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, entity *T)
 	}
 	ok, err := repository.mutexes.NewAndLock(ctx, entityId)
 	if err != nil {
-		return nil, false
+		panic("Take error: " + err.Error())
 	}
 	if !ok {
 		actual = repository.Take(ctx, entityId)
