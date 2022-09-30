@@ -4,16 +4,15 @@ import (
 	"context"
 	"reflect"
 	"sync"
-	"unsafe"
 )
 
 type Repository[T any] interface {
-	Find(ctx context.Context, id any) *T
-	Take(ctx context.Context, id any) *T
-	Put(ctx context.Context, entity *T)
-	PutIfAbsent(ctx context.Context, entity *T) (actual *T, absent bool)
-	Remove(ctx context.Context, id any) *T
-	TakeOrPutIfAbsent(ctx context.Context, id any, newEntity *T) *T
+	Find(ctx context.Context, id any) (entity T, found bool)
+	Take(ctx context.Context, id any) (entity T, found bool)
+	Put(ctx context.Context, id any, entity T)
+	PutIfAbsent(ctx context.Context, id any, entity T) (actual T, absent bool)
+	Remove(ctx context.Context, id any) T
+	TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T
 }
 
 //对内的仓库操作集合
@@ -23,23 +22,20 @@ type innerRepository interface {
 }
 
 type RepositoryImpl[T any] struct {
-	entityType  string
-	store       Store[T]
-	mutexes     Mutexes
-	getEntityId GetEntityId[T]
+	entityType string
+	store      Store[T]
+	mutexes    Mutexes
 }
 
 type Store[T any] interface {
 	//加载上来的是原始entity的一个副本(copy)，基于数据库的store天然就是copy，而内存store需要实现copy而不能传递原始entity的指针
-	Load(ctx context.Context, id any) (*T, error)
-	Save(ctx context.Context, id any, entity *T) error
+	Load(ctx context.Context, id any) (entity T, found bool, err error)
+	Save(ctx context.Context, id any, entity T) error
 	SaveAll(ctx context.Context, entitiesToInsert map[any]any, entitiesToUpdate map[any]*ProcessEntity) error
 	RemoveAll(ctx context.Context, ids []any) error
 }
 
-type NewZeroEntity[T any] func() *T
-
-type GetEntityId[T any] func(entity *T) any
+type NewZeroEntity[T any] func() T
 
 type Mutexes interface {
 	Lock(ctx context.Context, id any) (ok bool, absent bool, err error)
@@ -52,39 +48,35 @@ func (repository *RepositoryImpl[T]) EntityType() string {
 	return repository.entityType
 }
 
-func (repository *RepositoryImpl[T]) GetEntityId(entity *T) any {
-	return repository.getEntityId(entity)
-}
-
-func (repository *RepositoryImpl[T]) Find(ctx context.Context, id any) *T {
+func (repository *RepositoryImpl[T]) Find(ctx context.Context, id any) (entity T, found bool) {
 	entityInProcess := CopyEntityInProcess(ctx, repository.entityType, id)
 	if entityInProcess != nil {
-		value, _ := entityInProcess.(*T)
-		return value
+		value, _ := entityInProcess.(T)
+		return value, true
 	}
-	entity, err := repository.store.Load(ctx, id)
+	entity, found, err := repository.store.Load(ctx, id)
 	if err != nil {
 		panic("Find error: " + err.Error())
 	}
-	return entity
+	return entity, found
 }
 
-func (repository *RepositoryImpl[T]) Take(ctx context.Context, id any) *T {
+func (repository *RepositoryImpl[T]) Take(ctx context.Context, id any) (entity T, found bool) {
 	exists, ent := TakeEntityInProcess(ctx, repository.entityType, id)
 	if exists {
-		value, _ := ent.(*T)
-		return value
+		value, _ := ent.(T)
+		return value, true
 	}
 	ok, absent, err := repository.mutexes.Lock(ctx, id)
 	if err != nil {
 		panic("Take error: " + err.Error())
 	}
-	var existsEntity *T
+	var existsEntity T
 	if absent {
 		//检查entity存在且补锁
-		existsEntity = repository.Find(ctx, id)
-		if existsEntity == nil {
-			return nil
+		existsEntity, found = repository.Find(ctx, id)
+		if !found {
+			return entity, false
 		}
 		ok, err := repository.mutexes.NewAndLock(ctx, id)
 		if err != nil {
@@ -104,61 +96,59 @@ func (repository *RepositoryImpl[T]) Take(ctx context.Context, id any) *T {
 		if !ok {
 			panic("Take error: can not 'Take' since entity is occupied")
 		}
-		existsEntity = repository.Find(ctx, id)
+		existsEntity, found = repository.Find(ctx, id)
 		if err != nil {
 			panic("Take error: " + err.Error())
 		}
-		if existsEntity == nil {
-			return nil
+		if !found {
+			return entity, false
 		}
 	}
-	TakenFromRepository(ctx, repository.entityType, repository.getEntityId(existsEntity), existsEntity)
-	return existsEntity
+	TakenFromRepository(ctx, repository.entityType, id, existsEntity)
+	return existsEntity, true
 }
 
-func (repository *RepositoryImpl[T]) Put(ctx context.Context, entity *T) {
-	entityId := repository.getEntityId(entity)
-	if EntityAvailableInProcess(ctx, repository.entityType, entityId) {
+func (repository *RepositoryImpl[T]) Put(ctx context.Context, id any, entity T) {
+	if EntityAvailableInProcess(ctx, repository.entityType, id) {
 		panic("can not 'Put' since entity already exists")
 	}
-	PutNewEntityToProcess(ctx, repository.entityType, entityId, entity)
+	PutNewEntityToProcess(ctx, repository.entityType, id, entity)
 }
 
-func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, entity *T) (actual *T, absent bool) {
-	entityId := repository.getEntityId(entity)
+func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, id any, entity T) (actual T, absent bool) {
 	//先要看过程中的，如果有可用的那就拿来做实际值，如果有但是不可用那就取用新值且新值覆盖老值
-	entityGetOrPut, get := GetFromOrPutEntityToProcessIfNotAvailable(ctx, repository.entityType, entityId, entity)
+	entityGetOrPut, get := GetFromOrPutEntityToProcessIfNotAvailable(ctx, repository.entityType, id, entity)
 	if entityGetOrPut != nil {
-		actual, _ = entityGetOrPut.(*T)
+		actual, _ = entityGetOrPut.(T)
 		return actual, !get
 	}
-	ok, err := repository.mutexes.NewAndLock(ctx, entityId)
+	ok, err := repository.mutexes.NewAndLock(ctx, id)
 	if err != nil {
-		panic("Take error: " + err.Error())
-	}
-	if !ok {
-		actual = repository.Take(ctx, entityId)
-		return actual, false
-	}
-	if err = repository.store.Save(ctx, entityId, entity); err != nil {
 		panic("PutIfAbsent error: " + err.Error())
 	}
-	TakenFromRepository(ctx, repository.entityType, entityId, entity)
+	if !ok {
+		actual, _ = repository.Take(ctx, id)
+		return actual, false
+	}
+	if err = repository.store.Save(ctx, id, entity); err != nil {
+		panic("PutIfAbsent error: " + err.Error())
+	}
+	TakenFromRepository(ctx, repository.entityType, id, entity)
 	return entity, true
 }
 
-func (repository *RepositoryImpl[T]) Remove(ctx context.Context, id any) *T {
-	entity := repository.Take(ctx, id)
-	if entity != nil {
+func (repository *RepositoryImpl[T]) Remove(ctx context.Context, id any) T {
+	entity, found := repository.Take(ctx, id)
+	if found {
 		RemoveEntityInProcess(ctx, repository.entityType, id, entity)
 	}
 	return entity
 }
 
-func (repository *RepositoryImpl[T]) TakeOrPutIfAbsent(ctx context.Context, id any, newEntity *T) *T {
-	entity := repository.Take(ctx, id)
-	if entity == nil {
-		actual, _ := repository.PutIfAbsent(ctx, newEntity)
+func (repository *RepositoryImpl[T]) TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T {
+	entity, found := repository.Take(ctx, id)
+	if !found {
+		actual, _ := repository.PutIfAbsent(ctx, id, newEntity)
 		return actual
 	}
 	return entity
@@ -185,65 +175,9 @@ func NewRepository[T any](store Store[T], mutexes Mutexes, newZeroEntityFunc New
 	entityType := reflect.TypeOf(zeroEntity).Elem()
 	typeFullname := entityType.PkgPath() + "." + entityType.Name()
 	generateEntityCopier(typeFullname, entityType, newZeroEntityFunc)
-	getEntityIdFunc := BuildGetEntityIdFunc[T](entityType)
-	repo := &RepositoryImpl[T]{typeFullname, store, mutexes, getEntityIdFunc}
+	repo := &RepositoryImpl[T]{typeFullname, store, mutexes}
 	registerRepository(repo)
 	return repo
-}
-
-func BuildGetEntityIdFunc[T any](entityType reflect.Type) GetEntityId[T] {
-	//约定，第0个field就是id
-	idField := entityType.Field(0)
-	switch idField.Type.Kind() {
-	case reflect.Int:
-		return func(entity *T) any {
-			return *((*int)(unsafe.Pointer(entity)))
-		}
-	case reflect.Int8:
-		return func(entity *T) any {
-			return *((*int8)(unsafe.Pointer(entity)))
-		}
-	case reflect.Int16:
-		return func(entity *T) any {
-			return *((*int16)(unsafe.Pointer(entity)))
-		}
-	case reflect.Int32:
-		return func(entity *T) any {
-			return *((*int32)(unsafe.Pointer(entity)))
-		}
-	case reflect.Int64:
-		return func(entity *T) any {
-			return *((*int64)(unsafe.Pointer(entity)))
-		}
-	case reflect.Uint:
-		return func(entity *T) any {
-			return *((*uint)(unsafe.Pointer(entity)))
-		}
-	case reflect.Uint8:
-		return func(entity *T) any {
-			return *((*uint8)(unsafe.Pointer(entity)))
-		}
-	case reflect.Uint16:
-		return func(entity *T) any {
-			return *((*uint16)(unsafe.Pointer(entity)))
-		}
-	case reflect.Uint32:
-		return func(entity *T) any {
-			return *((*uint32)(unsafe.Pointer(entity)))
-		}
-	case reflect.Uint64:
-		return func(entity *T) any {
-			return *((*uint64)(unsafe.Pointer(entity)))
-		}
-	case reflect.String:
-		return func(entity *T) any {
-			return *((*string)(unsafe.Pointer(entity)))
-		}
-	default:
-		return func(entity *T) any {
-			return nil
-		}
-	}
 }
 
 //包含常用的查询功能，复杂的查询请通过其他机制实现
@@ -319,12 +253,16 @@ func NewMockStore[T any]() *MockStore[T] {
 	return &MockStore[T]{make(map[any]*T)}
 }
 
-func (store *MockStore[T]) Load(ctx context.Context, id any) (*T, error) {
-	return store.data[id], nil
+func (store *MockStore[T]) Load(ctx context.Context, id any) (entity T, found bool, err error) {
+	entityPtr := store.data[id]
+	if entityPtr == nil {
+		return entity, false, nil
+	}
+	return *entityPtr, true, nil
 }
 
-func (store *MockStore[T]) Save(ctx context.Context, id any, entity *T) error {
-	store.data[id] = entity
+func (store *MockStore[T]) Save(ctx context.Context, id any, entity T) error {
+	store.data[id] = &entity
 	return nil
 }
 

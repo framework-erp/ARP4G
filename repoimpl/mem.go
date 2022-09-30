@@ -14,15 +14,15 @@ type MemStore[T any] struct {
 	typeFullname string
 }
 
-func (store *MemStore[T]) Load(ctx context.Context, id any) (*T, error) {
-	entity, ok := store.data.Load(id)
+func (store *MemStore[T]) Load(ctx context.Context, id any) (entity T, found bool, err error) {
+	entitLoad, ok := store.data.Load(id)
 	if !ok {
-		return nil, nil
+		return entity, false, nil
 	}
-	return arp.CopyEntity(store.typeFullname, entity).(*T), nil
+	return arp.CopyEntity(store.typeFullname, entitLoad).(T), true, nil
 }
 
-func (store *MemStore[T]) Save(ctx context.Context, id any, entity *T) error {
+func (store *MemStore[T]) Save(ctx context.Context, id any, entity T) error {
 	if _, ok := store.data.Load(id); ok {
 		return errors.New("can not 'Save' since entity already exists")
 	}
@@ -65,10 +65,11 @@ func (memMutexes *MemMutexes) Lock(ctx context.Context, id any) (ok bool, absent
 }
 
 func (memMutexes *MemMutexes) NewAndLock(ctx context.Context, id any) (ok bool, err error) {
-	_, loaded := memMutexes.mutexes.LoadOrStore(id, &sync.Mutex{})
+	mutex, loaded := memMutexes.mutexes.LoadOrStore(id, &sync.Mutex{})
 	if loaded {
 		return false, nil
 	}
+	(mutex.(*sync.Mutex)).Lock()
 	return true, nil
 }
 

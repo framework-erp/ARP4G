@@ -48,24 +48,24 @@ type OrderService struct {
 }
 
 type ProductRepository interface {
-	Find(ctx context.Context, id any) *Product
-	Put(ctx context.Context, entity *Product)
+	Find(ctx context.Context, id any) (*Product, bool)
+	Put(ctx context.Context, id any, entity *Product)
 }
 
 type ProductStockRepository interface {
-	Find(ctx context.Context, id any) *ProductStock
-	Take(ctx context.Context, id any) *ProductStock
-	PutIfAbsent(ctx context.Context, productStock *ProductStock) (actual *ProductStock, absent bool)
+	Find(ctx context.Context, id any) (*ProductStock, bool)
+	Take(ctx context.Context, id any) (*ProductStock, bool)
+	PutIfAbsent(ctx context.Context, id any, productStock *ProductStock) (actual *ProductStock, absent bool)
 	TakeOrPutIfAbsent(ctx context.Context, id any, productStock *ProductStock) *ProductStock
 }
 
 type OrderRepository interface {
-	Take(ctx context.Context, id any) *Order
-	Put(ctx context.Context, order *Order)
+	Take(ctx context.Context, id any) (*Order, bool)
+	Put(ctx context.Context, id any, order *Order)
 }
 
 func (orderService *OrderService) NewProduct(ctx context.Context, id int, name string, price int) {
-	orderService.productRepository.Put(ctx, &Product{id, name, price})
+	orderService.productRepository.Put(ctx, id, &Product{id, name, price})
 }
 
 func (orderService *OrderService) IncreaseStock(ctx context.Context, productId int, amount int) *ProductStock {
@@ -82,24 +82,24 @@ func (orderService *OrderService) DecreaseStock(ctx context.Context, productId i
 
 func (orderService *OrderService) PlaceOrder(ctx context.Context, orderId int, orderItems map[int]int, userId int, userAddress string) error {
 	for productId, amount := range orderItems {
-		stock := orderService.productStockRepository.Take(ctx, productId)
+		stock, _ := orderService.productStockRepository.Take(ctx, productId)
 		if !stock.CheckAmount(amount) {
 			return errors.New("insufficient stock")
 		}
 	}
 	items := make([]OrderItem, 1)
 	for productId, amount := range orderItems {
-		stock := orderService.productStockRepository.Take(ctx, productId)
+		stock, _ := orderService.productStockRepository.Take(ctx, productId)
 		stock.Decrease(amount)
-		product := orderService.productRepository.Find(ctx, productId)
+		product, _ := orderService.productRepository.Find(ctx, productId)
 		items = append(items, OrderItem{*product, amount})
 	}
 	order := &Order{orderId, items, userId, userAddress, 0}
-	orderService.orderRepository.Put(ctx, order)
+	orderService.orderRepository.Put(ctx, orderId, order)
 	return nil
 }
 
 func (orderService *OrderService) FindStock(ctx context.Context, productId int) *ProductStock {
-	stock := orderService.productStockRepository.Find(ctx, productId)
+	stock, _ := orderService.productStockRepository.Find(ctx, productId)
 	return stock
 }
