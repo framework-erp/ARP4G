@@ -61,10 +61,12 @@ func (vcr *ViewCachedRepository[T]) PutIfAbsent(ctx context.Context, id any, ent
 	return
 }
 
-func (vcr *ViewCachedRepository[T]) Remove(ctx context.Context, id any) T {
-	removed := vcr.QueryRepositoryImpl.Remove(ctx, id)
-	vcr.UpdateCacheForEntity(id, nil)
-	return removed
+func (vcr *ViewCachedRepository[T]) Remove(ctx context.Context, id any) (removed T, exists bool) {
+	removed, exists = vcr.QueryRepositoryImpl.Remove(ctx, id)
+	if exists {
+		vcr.UpdateCacheForEntity(id, nil)
+	}
+	return
 }
 
 func (vcr *ViewCachedRepository[T]) TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T {

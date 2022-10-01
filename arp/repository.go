@@ -11,7 +11,7 @@ type Repository[T any] interface {
 	Take(ctx context.Context, id any) (entity T, found bool)
 	Put(ctx context.Context, id any, entity T)
 	PutIfAbsent(ctx context.Context, id any, entity T) (actual T, absent bool)
-	Remove(ctx context.Context, id any) T
+	Remove(ctx context.Context, id any) (removed T, exists bool)
 	TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T
 }
 
@@ -137,12 +137,13 @@ func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, id any, en
 	return entity, true
 }
 
-func (repository *RepositoryImpl[T]) Remove(ctx context.Context, id any) T {
+func (repository *RepositoryImpl[T]) Remove(ctx context.Context, id any) (removed T, exists bool) {
 	entity, found := repository.Take(ctx, id)
 	if found {
 		RemoveEntityInProcess(ctx, repository.entityType, id, entity)
+		return entity, true
 	}
-	return entity
+	return removed, false
 }
 
 func (repository *RepositoryImpl[T]) TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T {
