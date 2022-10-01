@@ -269,10 +269,12 @@ func (store *MockStore[T]) Save(ctx context.Context, id any, entity T) error {
 
 func (store *MockStore[T]) SaveAll(ctx context.Context, entitiesToInsert map[any]any, entitiesToUpdate map[any]*ProcessEntity) error {
 	for k, v := range entitiesToInsert {
-		store.data[k] = v.(*T)
+		t := v.(T)
+		store.data[k] = &t
 	}
 	for k, v := range entitiesToUpdate {
-		store.data[k] = v.entity.(*T)
+		t := v.entity.(T)
+		store.data[k] = &t
 	}
 	return nil
 }
