@@ -282,7 +282,7 @@ func (state *ToRemoveInRepoState) isEntityAvailable() bool {
 	return false
 }
 func (state *ToRemoveInRepoState) isAddByTake() bool {
-	return false
+	return true
 }
 
 //错误状态
