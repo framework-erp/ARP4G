@@ -4,6 +4,28 @@ ARP4G是一个go语言实现的简化应用开发的框架。
 通过 **A**ggregate（聚合）、**R**epository（仓库）、**P**rocess（过程）3个概念，隔离业务逻辑和技术实现细节，使开发者专注于产品业务本身。
 
 ## 一个简单的例子
+···
+func (serv *OrderService) CompleteOrder(ctx context.Context, orderId string) *Order {
+	//从仓库取出order
+	order, _ := serv.orderRepository.Take(ctx, orderId)
+	if order.state == "ongoing" {
+		//改变他的状态
+		order.state = "compleated"
+		//返回改变后的order
+		return order
+	}
+	return nil
+}
+
+type OrderService struct {
+	orderRepository OrderRepository
+}
+
+type OrderRepository interface {
+	Take(ctx context.Context, id any) (*Order, bool)
+}
+···
+
 这里我们首先从订单仓库取出了一个订单（聚合），随后改变了他的状态，变成“已完成”，最后返回了这个“已完成”的订单。
 
 这是一段业务代码，在这过程我们不关心查询和保存这些和数据库打交道的事情，我们也不关心 “并发改变订单状态所带来的问题” 这样的复杂技术细节，代码中没有任何技术细节，只有业务。
