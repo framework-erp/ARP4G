@@ -36,6 +36,18 @@ type OrderRepository interface {
 订单仓库 “orderRepository” 不需要开发，可以使用[ARP4G的不同实现](#ARP4G的不同实现)来实现
 
 ## 安装
+
+1. 首先需要 [Go](https://golang.org/) installed （**version 1.18+ is required**）， 然后可以用以下命令安装ARP4G。
+
+```sh
+go get -u github.com/zhengchengdong/ARP4G
+```
+
+2. 在你的代码中 import：
+
+```go
+import "github.com/zhengchengdong/ARP4G"
+```
 ## 快速开始
 ## ARP4G的不同实现
 ### MongoDB
