@@ -37,7 +37,7 @@ type OrderRepository interface {
 
 ## 安装
 
-1. 首先需要 [Go](https://golang.org/) installed （**version 1.18+ is required**）， 然后可以用以下命令安装ARP4G。
+1. 首先需要 [Go](https://golang.org/) 已安装（**1.18及以上版本**）， 然后可以用以下命令安装ARP4G。
 
 ```sh
 go get -u github.com/zhengchengdong/ARP4G
@@ -51,7 +51,9 @@ import "github.com/zhengchengdong/ARP4G"
 ## 快速开始
 ## ARP4G的不同实现
 ### MongoDB
+[ARP4G-mongodb](https://github.com/zhengchengdong/ARP4G-mongodb)
 ### Redis
+[ARP4G-redis](https://github.com/zhengchengdong/ARP4G-redis)
 ## 使用ARP开发业务简介
 ### Aggregate（聚合）
 ### Repository（仓库）
