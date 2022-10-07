@@ -106,7 +106,7 @@ type OrderRepository interface {
 仓库设计成接口是因为当我们在设计业务的时候，不希望扯入任何技术细节。在业务侧，我们需要的是有一个订单仓库，从中可以拿订单，并不关心仓库是怎么建造的。
 
 ### 从仓库获取我要的聚合
-考虑一个现实世界中的汽车仓库，当一个顾客把一辆汽车买走后，另一个顾客是无法买走**同一辆**汽车的，同时顾客对自己的新车喷涂了喜欢的图案，当然另一个顾客无法喷涂这辆车，尽管他不喜欢这个图案，因为他没有取得它。我们把从从仓库中取出聚合的操作叫做**Take**。
+考虑一个现实世界中的汽车仓库，当一个顾客把一辆汽车买走后，另一个顾客是无法买走**同一辆**汽车的，同时顾客对自己的新车喷涂了喜欢的图案，当然另一个顾客无法喷涂这辆车，尽管他不喜欢这个图案，因为他没有取得它。我们把从仓库中取出聚合的操作叫做**Take**。
 
 另一个场景，仓库管理员想要确认某辆车的型号是不是最新款，他来到仓库，找到了这辆车，确认了它的型号，记录在了自己的小本子上。他并不需要把这辆车从仓库开走，同时另一个仓库管理员也可以对同一辆车做确认。我们把这种只需要在仓库中找到聚合的操作叫做**Find**
 
@@ -118,6 +118,30 @@ Take(ctx context.Context, id any) (order Order, found bool)
 ```
 
 ### 完成我的业务逻辑
+我们还需要一个OrderService
+```go
+type OrderService struct {
+	orderRepository OrderRepository
+}
+```
+OrderService提供一个业务方法来实现我们的业务逻辑
+```go
+func (serv *OrderService) CompleteOrder(ctx context.Context, orderId string) *Order {
+	//从仓库取出order
+	order, _ := serv.orderRepository.Take(ctx, orderId)
+	if order.state == "ongoing" {
+		//改变他的状态
+		order.state = "compleated"
+		//返回改变后的order
+		return order
+	}
+	return nil
+}
+```
+看看里面做了些什么，从仓库取出order，然后改变它的状态。
+
+我们认为大多数业务都是这样，我们把**从仓库中取出一个或几个聚合，并改变他们的状态**这样的一个整体叫做**Process**（过程）。通常，一个过程就是一个业务服务的方法。
+
 ### ARP4G做了什么
 在这之前我愿介绍一些业务设计的规则：
 
