@@ -100,7 +100,7 @@ type Order struct {
 现在，我们有了订单仓库，OrderRepository
 ```go
 type OrderRepository interface {
-	Take(ctx context.Context, id any) (order Order, found bool)
+	Take(ctx context.Context, id any) (order *Order, found bool)
 }
 ```
 仓库设计成接口是因为当我们在设计业务的时候，不希望扯入任何技术细节。在业务侧，我们需要的是有一个订单仓库，从中可以拿订单，并不关心仓库是怎么建造的。
@@ -114,7 +114,7 @@ type OrderRepository interface {
 
 这里我们要从仓库拿走这个订单，并改变它的状态，所以我们会有Take
 ```go
-Take(ctx context.Context, id any) (order Order, found bool)
+Take(ctx context.Context, id any) (order *Order, found bool)
 ```
 
 ### 完成我的业务逻辑
@@ -142,6 +142,17 @@ func (serv *OrderService) CompleteOrder(ctx context.Context, orderId string) *Or
 
 我们认为大多数业务都是这样，我们把**从仓库中取出一个或几个聚合，并改变他们的状态**这样的一个整体叫做**Process**（过程）。通常，一个过程就是一个业务服务的方法。
 
+最后我们需要用ARP4G框架来包装一下这个过程，从而照顾所有的技术细节
+```go
+func main() {
+	orderService := &OrderService{}
+	arp.Go(context.Background(), func(ctx context.Context) {
+		//调用业务方法
+		orderService.CompleteOrder(ctx, "12345")
+	})
+}
+```
+
 ### ARP4G做了什么
-在这之前我愿介绍一些业务设计的规则：
+在这之前我愿介绍一些ARP业务设计的规则：
 
