@@ -112,6 +112,11 @@ type OrderRepository interface {
 
 总结起来，当我们需要获取仓库中的聚合，并试图改变它的状态，那么用**Take**，如果我们只是想在仓库中找到一个聚合并想要看看它的状态，那么用**Find**
 
+这里我们要从仓库拿走这个订单，并改变它的状态，所以我们会有Take
+```go
+Take(ctx context.Context, id any) (order Order, found bool)
+```
+
 ### 完成我的业务逻辑
 ### ARP4G做了什么
 在这之前我愿介绍一些业务设计的规则：
