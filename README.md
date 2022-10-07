@@ -83,7 +83,7 @@ func (serv *GreetingService) SayHello(ctx context.Context) {
 ## 使用ARP开发业务简介
 假设有一段**完成订单**的业务，根据订单id找到相关订单，把它的状态改为已完成。以下将介绍如何使用**A**ggregate、**R**epository、**P**rocess3个概念且利用ARP4G框架完成这段简单的业务。
 ### Aggregate（聚合）
-一个聚合就是表示某个实体的对象，该实体可能还包含别的实体，通常，这在业务上意味着被包含的实体是聚合的一部分，比如一个**订单**包含一些**订单项**。
+一个聚合就是表示某个实体的对象，该实体可能还包含别的实体，通常，这在业务上意味着被包含的实体是聚合的一部分，比如一个**订单**包含一些**订单项**。这里说的聚合就是[DDD_Aggregate](https://martinfowler.com/bliki/DDD_Aggregate.html)
 ### Repository（仓库）
 ### 从仓库获取我要的聚合
 ### 完成我的业务逻辑
