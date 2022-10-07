@@ -49,6 +49,32 @@ go get -u github.com/zhengchengdong/ARP4G
 import "github.com/zhengchengdong/ARP4G"
 ```
 ## 快速开始
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/zhengchengdong/ARP4G/arp"
+)
+
+func main() {
+	greetingService := &GreetingService{}
+	arp.Go(context.Background(), func(ctx context.Context) {
+		//调用业务方法
+		greetingService.SayHello(ctx)
+	})
+}
+
+type GreetingService struct {
+}
+
+func (serv *GreetingService) SayHello(ctx context.Context) {
+	fmt.Println("hello world")
+}
+
+```
 ## ARP4G的不同实现
 ### MongoDB
 [ARP4G-mongodb](https://github.com/zhengchengdong/ARP4G-mongodb)
