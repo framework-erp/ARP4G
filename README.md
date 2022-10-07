@@ -145,7 +145,7 @@ func (serv *OrderService) CompleteOrder(ctx context.Context, orderId string) *Or
 最后我们需要用ARP4G框架来包装一下这个过程，从而照顾所有的技术细节
 ```go
 func main() {
-	orderService := &OrderService{}
+	orderService := &OrderService{repoimpl.NewMemRepository(func() *Order { return &Order{} })}
 	arp.Go(context.Background(), func(ctx context.Context) {
 		//调用业务方法
 		orderService.CompleteOrder(ctx, "12345")
