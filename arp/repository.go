@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+//仓库是存放聚合的地方，聚合只会通过它的id来获取。
+//仓库是一个接口，是为了清晰地罗列它的功能，除此之外没有其他特别的原因。
+//泛型类型T代表聚合的类型，仓库创建的时候决定T的实际类型，
+//例如：
+//repoimpl.NewMemRepository(func() *Order { return &Order{} }) 这里创建了一个实际类型为“Order”的内存仓库
+//repoimpl.NewMemRepository(func() *Product { return &Product{} }) 这里创建了一个实际类型为“Product”的内存仓库
 type Repository[T any] interface {
 	Find(ctx context.Context, id any) (entity T, found bool)
 	Take(ctx context.Context, id any) (entity T, found bool)
