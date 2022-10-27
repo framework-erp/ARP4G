@@ -2,6 +2,7 @@ package arp
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"sync"
 )
@@ -191,6 +192,7 @@ func NewRepository[T any](store Store[T], mutexes Mutexes, newZeroEntityFunc New
 type QueryFuncs[T any] interface {
 	QueryAllIds(ctx context.Context) (ids []any, err error)
 	Count(ctx context.Context) (uint64, error)
+	QueryAllByField(ctx context.Context, fieldName string, fieldValue any) ([]T, error)
 }
 
 //包含一些常用查询功能的仓库，作为反CQRS（命令查询分离模式）设计，具有现实意义
@@ -311,23 +313,18 @@ func (mutexes *MockMutexes) UnlockAll(ctx context.Context, ids []any) {
 }
 
 type MockQueryFuncs[T any] struct {
-	data map[any]*T
 }
 
 func (qf *MockQueryFuncs[T]) QueryAllIds(ctx context.Context) (ids []any, err error) {
-	keys := make([]any, 0, len(qf.data))
-	for k := range qf.data {
-		keys = append(keys, k)
-	}
-	return keys, nil
+	return nil, errors.New("unsupported")
 }
 
 func (qf *MockQueryFuncs[T]) Count(ctx context.Context) (uint64, error) {
-	return uint64(len(qf.data)), nil
+	return 0, errors.New("unsupported")
 }
 
-func NewMockQueryFuncs[T any](data map[any]*T) *MockQueryFuncs[T] {
-	return &MockQueryFuncs[T]{data}
+func (qf *MockQueryFuncs[T]) QueryAllByField(ctx context.Context, fieldName string, fieldValue any) ([]T, error) {
+	return nil, errors.New("unsupported")
 }
 
 func NewMockRepository[T any](newZeroEntityFunc NewZeroEntity[T]) Repository[T] {
@@ -336,5 +333,5 @@ func NewMockRepository[T any](newZeroEntityFunc NewZeroEntity[T]) Repository[T] 
 
 func NewMockQueryRepository[T any](newZeroEntityFunc NewZeroEntity[T]) QueryRepository[T] {
 	mockRepo := (NewMockRepository(newZeroEntityFunc)).(*RepositoryImpl[T])
-	return &QueryRepositoryImpl[T]{mockRepo, NewMockQueryFuncs(mockRepo.store.(*MockStore[T]).data)}
+	return &QueryRepositoryImpl[T]{mockRepo, &MockQueryFuncs[T]{}}
 }
