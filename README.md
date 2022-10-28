@@ -64,6 +64,7 @@ func main() {
 	arp.Go(context.Background(), func(ctx context.Context) {
 		//调用业务方法
 		greetingService.SayHello(ctx)
+		return nil
 	})
 }
 
@@ -149,6 +150,7 @@ func main() {
 	arp.Go(context.Background(), func(ctx context.Context) {
 		//调用业务方法
 		orderService.CompleteOrder(ctx, "12345")
+		return nil
 	})
 }
 ```
