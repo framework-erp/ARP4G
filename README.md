@@ -61,7 +61,7 @@ import (
 
 func main() {
 	greetingService := &GreetingService{}
-	arp.Go(context.Background(), func(ctx context.Context) {
+	arp.Go(context.Background(), func(ctx context.Context) error {
 		//调用业务方法
 		greetingService.SayHello(ctx)
 		return nil
@@ -147,7 +147,7 @@ func (serv *OrderService) CompleteOrder(ctx context.Context, orderId string) *Or
 ```go
 func main() {
 	orderService := &OrderService{repoimpl.NewMemRepository(func() *Order { return &Order{} })}
-	arp.Go(context.Background(), func(ctx context.Context) {
+	arp.Go(context.Background(), func(ctx context.Context) error {
 		//调用业务方法
 		orderService.CompleteOrder(ctx, "12345")
 		return nil
