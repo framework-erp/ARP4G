@@ -17,23 +17,27 @@ func TestPlaceOrder(t *testing.T) {
 		repoimpl.NewMemRepository(func() *ProductStock { return &ProductStock{} }),
 		repoimpl.NewMemRepository(func() *Order { return &Order{} })}
 
-	err := arp.Go(context.Background(), func(ctx context.Context) {
+	err := arp.Go(context.Background(), func(ctx context.Context) error {
 		orderService.NewProduct(ctx, 1, "apple", 10)
+		return nil
 	})
 	AssertNoError(t, err)
 
-	err = arp.Go(context.Background(), func(ctx context.Context) {
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
 		orderService.IncreaseStock(ctx, 1, 5)
+		return nil
 	})
 	AssertNoError(t, err)
 
-	err = arp.Go(context.Background(), func(ctx context.Context) {
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
 		orderService.NewProduct(ctx, 2, "orange", 5)
+		return nil
 	})
 	AssertNoError(t, err)
 
-	err = arp.Go(context.Background(), func(ctx context.Context) {
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
 		orderService.IncreaseStock(ctx, 2, 5)
+		return nil
 	})
 	AssertNoError(t, err)
 
@@ -44,28 +48,24 @@ func TestPlaceOrder(t *testing.T) {
 	orderId := 1
 	userId := 1
 	userAddress := "address"
-	var bizErr error
-	err = arp.Go(context.Background(), func(ctx context.Context) {
-		bizErr = orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
+		return orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
 	})
 	AssertNoError(t, err)
-	AssertNoError(t, bizErr)
 
 	orderId = 2
-	err = arp.Go(context.Background(), func(ctx context.Context) {
-		bizErr = orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
+		return orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
 	})
-	AssertNoError(t, err)
-	AssertError(t, bizErr)
+	AssertError(t, err)
 
 	orderItems[1] = 2
 	orderItems[2] = 2
 	orderId = 3
-	err = arp.Go(context.Background(), func(ctx context.Context) {
-		bizErr = orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
+		return orderService.PlaceOrder(ctx, orderId, orderItems, userId, userAddress)
 	})
 	AssertNoError(t, err)
-	AssertNoError(t, bizErr)
 
 }
 
@@ -76,50 +76,56 @@ func TestModifyStock(t *testing.T) {
 		repoimpl.NewMemRepository(func() *ProductStock { return &ProductStock{} }),
 		repoimpl.NewMemRepository(func() *Order { return &Order{} })}
 
-	err := arp.Go(context.Background(), func(ctx context.Context) {
+	err := arp.Go(context.Background(), func(ctx context.Context) error {
 		orderService.NewProduct(ctx, 1, "apple", 10)
+		return nil
 	})
 	AssertNoError(t, err)
 
-	err = arp.Go(context.Background(), func(ctx context.Context) {
+	err = arp.Go(context.Background(), func(ctx context.Context) error {
 		stock := orderService.IncreaseStock(ctx, 1, 1000)
 		AssertEqual(t, 1000, stock.freeAmount)
+		return nil
 	})
 	AssertNoError(t, err)
 
 	go func() {
-		arp.Go(context.Background(), func(ctx context.Context) {
+		arp.Go(context.Background(), func(ctx context.Context) error {
 			for i := 0; i < 100; i++ {
 				orderService.IncreaseStock(ctx, 1, 1)
 				runtime.Gosched()
 			}
+			return nil
 		})
 	}()
 
 	go func() {
-		arp.Go(context.Background(), func(ctx context.Context) {
+		arp.Go(context.Background(), func(ctx context.Context) error {
 			for i := 0; i < 100; i++ {
 				orderService.DecreaseStock(ctx, 1, 1)
 				runtime.Gosched()
 			}
+			return nil
 		})
 	}()
 
 	go func() {
-		arp.Go(context.Background(), func(ctx context.Context) {
+		arp.Go(context.Background(), func(ctx context.Context) error {
 			for i := 0; i < 100; i++ {
 				orderService.IncreaseStock(ctx, 1, 2)
 				runtime.Gosched()
 			}
+			return nil
 		})
 	}()
 
 	go func() {
-		arp.Go(context.Background(), func(ctx context.Context) {
+		arp.Go(context.Background(), func(ctx context.Context) error {
 			for i := 0; i < 100; i++ {
 				orderService.DecreaseStock(ctx, 1, 2)
 				runtime.Gosched()
 			}
+			return nil
 		})
 	}()
 

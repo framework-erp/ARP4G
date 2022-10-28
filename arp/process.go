@@ -36,9 +36,13 @@ func Abort(ctx context.Context) {
 	releaseProcessEntities(ctx, pc)
 }
 
-func Go(ctx context.Context, f func(ctx context.Context)) (err error) {
+func Go(ctx context.Context, f func(ctx context.Context) error) (err error) {
 	ctx = Start(ctx)
 	defer func() {
+		if err != nil {
+			Abort(ctx)
+			return
+		}
 		if r := recover(); r == nil {
 			err = Finish(ctx)
 		} else {
@@ -53,7 +57,7 @@ func Go(ctx context.Context, f func(ctx context.Context)) (err error) {
 			}
 		}
 	}()
-	f(ctx)
+	err = f(ctx)
 	return
 }
 
