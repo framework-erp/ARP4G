@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zhengchengdong/ARP4G/arp"
-	"github.com/zhengchengdong/ARP4G/repoimpl"
+	"github.com/framework-arp/ARP4G/arp"
+	"github.com/framework-arp/ARP4G/repoimpl"
 )
 
 //业务开发测试
