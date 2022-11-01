@@ -40,13 +40,13 @@ type OrderRepository interface {
 1. 首先需要 [Go](https://golang.org/) 已安装（**1.18及以上版本**）， 然后可以用以下命令安装ARP4G。
 
 ```sh
-go get -u github.com/zhengchengdong/ARP4G
+go get -u github.com/framework-arp/ARP4G
 ```
 
 2. 在你的代码中 import：
 
 ```go
-import "github.com/zhengchengdong/ARP4G"
+import "github.com/framework-arp/ARP4G"
 ```
 ## 快速开始
 ```go
@@ -56,7 +56,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zhengchengdong/ARP4G/arp"
+	"github.com/framework-arp/ARP4G/arp"
 )
 
 func main() {
@@ -78,9 +78,9 @@ func (serv *GreetingService) SayHello(ctx context.Context) {
 ```
 ## ARP4G的不同实现
 ### MongoDB
-[ARP4G-mongodb](https://github.com/zhengchengdong/ARP4G-mongodb)
+[ARP4G-mongodb](https://github.com/framework-arp/ARP4G-mongodb)
 ### Redis
-[ARP4G-redis](https://github.com/zhengchengdong/ARP4G-redis)
+[ARP4G-redis](https://github.com/framework-arp/ARP4G-redis)
 ## 使用ARP开发业务简介
 假设有一段**完成订单**的业务，根据订单id找到相关订单，把它的状态改为已完成。以下将介绍如何使用**A**ggregate、**R**epository、**P**rocess3个概念且利用ARP4G框架完成这段简单的业务。
 ### Aggregate（聚合）
@@ -175,4 +175,4 @@ func main() {
 
 ## 一个完整的例子
 
-[ARP4G-example](https://github.com/zhengchengdong/ARP4G-example)
+[ARP4G-example](https://github.com/framework-arp/ARP4G-example)
