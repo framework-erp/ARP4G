@@ -169,7 +169,7 @@ func (pe *ProcessEntity) changeStateByRemove() {
 }
 
 func (pe *ProcessEntity) changeStateByPutIfAbsent() {
-	pe.state = pe.state.transferByPutIfAbsen()
+	pe.state = pe.state.transferByPutIfAbsent()
 }
 
 func (pe *ProcessEntity) copyEntity(entityType string) any {
@@ -191,7 +191,7 @@ func (pe *ProcessEntity) isAddByTake() bool {
 type ProcessEntityState interface {
 	transferByTake() ProcessEntityState
 	transferByPut() ProcessEntityState
-	transferByPutIfAbsen() ProcessEntityState
+	transferByPutIfAbsent() ProcessEntityState
 	transferByRemove() ProcessEntityState
 	isEntityAvailable() bool
 	isAddByTake() bool
@@ -207,7 +207,7 @@ func (state *TakenFromRepoState) transferByTake() ProcessEntityState {
 func (state *TakenFromRepoState) transferByPut() ProcessEntityState {
 	return &ErrorState{}
 }
-func (state *TakenFromRepoState) transferByPutIfAbsen() ProcessEntityState {
+func (state *TakenFromRepoState) transferByPutIfAbsent() ProcessEntityState {
 	return state
 }
 func (state *TakenFromRepoState) transferByRemove() ProcessEntityState {
@@ -230,7 +230,7 @@ func (state *CreatedInProcState) transferByTake() ProcessEntityState {
 func (state *CreatedInProcState) transferByPut() ProcessEntityState {
 	return &ErrorState{}
 }
-func (state *CreatedInProcState) transferByPutIfAbsen() ProcessEntityState {
+func (state *CreatedInProcState) transferByPutIfAbsent() ProcessEntityState {
 	return state
 }
 func (state *CreatedInProcState) transferByRemove() ProcessEntityState {
@@ -253,7 +253,7 @@ func (state *TransientInProcState) transferByTake() ProcessEntityState {
 func (state *TransientInProcState) transferByPut() ProcessEntityState {
 	return &CreatedInProcState{}
 }
-func (state *TransientInProcState) transferByPutIfAbsen() ProcessEntityState {
+func (state *TransientInProcState) transferByPutIfAbsent() ProcessEntityState {
 	return &CreatedInProcState{}
 }
 func (state *TransientInProcState) transferByRemove() ProcessEntityState {
@@ -276,7 +276,7 @@ func (state *ToRemoveInRepoState) transferByTake() ProcessEntityState {
 func (state *ToRemoveInRepoState) transferByPut() ProcessEntityState {
 	return &TakenFromRepoState{}
 }
-func (state *ToRemoveInRepoState) transferByPutIfAbsen() ProcessEntityState {
+func (state *ToRemoveInRepoState) transferByPutIfAbsent() ProcessEntityState {
 	return &TakenFromRepoState{}
 }
 func (state *ToRemoveInRepoState) transferByRemove() ProcessEntityState {
@@ -299,7 +299,7 @@ func (state *ErrorState) transferByTake() ProcessEntityState {
 func (state *ErrorState) transferByPut() ProcessEntityState {
 	return state
 }
-func (state *ErrorState) transferByPutIfAbsen() ProcessEntityState {
+func (state *ErrorState) transferByPutIfAbsent() ProcessEntityState {
 	return state
 }
 func (state *ErrorState) transferByRemove() ProcessEntityState {
