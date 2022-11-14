@@ -9,7 +9,7 @@ import (
 
 //用于只读查询类场景加速
 type ViewCachedRepository[T any] struct {
-	*arp.QueryRepositoryImpl[T]
+	*arp.RepositoryImpl[T]
 	cache sync.Map
 	count uint64
 	mutex sync.Mutex
@@ -34,35 +34,35 @@ func (vcr *ViewCachedRepository[T]) Find(ctx context.Context, id any) (entity T,
 		}
 		return entityLoad.(T), true
 	}
-	entityFromStore, found := vcr.QueryRepositoryImpl.Find(ctx, id)
+	entityFromStore, found := vcr.RepositoryImpl.Find(ctx, id)
 	vcr.UpdateCacheForEntity(id, entityFromStore)
 	entityLoad, _ = vcr.cache.Load(id)
 	if _, ok := entityLoad.(*NullEntity); ok {
 		return entity, false
 	}
 	//实际上ViewCachedRepository的目的是只读的，所以查出来需要复制一份，保护一下
-	return arp.CopyEntity(vcr.QueryRepositoryImpl.EntityType(), entityLoad).(T), true
+	return arp.CopyEntity(vcr.RepositoryImpl.EntityType(), entityLoad).(T), true
 }
 
 func (vcr *ViewCachedRepository[T]) Take(ctx context.Context, id any) (entity T, found bool) {
-	entity, found = vcr.QueryRepositoryImpl.Take(ctx, id)
+	entity, found = vcr.RepositoryImpl.Take(ctx, id)
 	vcr.UpdateCacheForEntity(id, entity)
 	return
 }
 
 func (vcr *ViewCachedRepository[T]) Put(ctx context.Context, id any, entity T) {
-	vcr.QueryRepositoryImpl.Put(ctx, id, entity)
+	vcr.RepositoryImpl.Put(ctx, id, entity)
 	vcr.UpdateCacheForEntity(id, entity)
 }
 
 func (vcr *ViewCachedRepository[T]) PutIfAbsent(ctx context.Context, id any, entity T) (actual T, absent bool) {
-	actual, absent = vcr.QueryRepositoryImpl.PutIfAbsent(ctx, id, entity)
+	actual, absent = vcr.RepositoryImpl.PutIfAbsent(ctx, id, entity)
 	vcr.UpdateCacheForEntity(id, actual)
 	return
 }
 
 func (vcr *ViewCachedRepository[T]) Remove(ctx context.Context, id any) (removed T, exists bool) {
-	removed, exists = vcr.QueryRepositoryImpl.Remove(ctx, id)
+	removed, exists = vcr.RepositoryImpl.Remove(ctx, id)
 	if exists {
 		vcr.UpdateCacheForEntity(id, nil)
 	}
@@ -70,7 +70,7 @@ func (vcr *ViewCachedRepository[T]) Remove(ctx context.Context, id any) (removed
 }
 
 func (vcr *ViewCachedRepository[T]) TakeOrPutIfAbsent(ctx context.Context, id any, newEntity T) T {
-	entity := vcr.QueryRepositoryImpl.TakeOrPutIfAbsent(ctx, id, newEntity)
+	entity := vcr.RepositoryImpl.TakeOrPutIfAbsent(ctx, id, newEntity)
 	vcr.UpdateCacheForEntity(id, entity)
 	return entity
 }
@@ -81,18 +81,6 @@ func (vcr *ViewCachedRepository[T]) updateCount(count uint64) {
 	vcr.mutex.Unlock()
 }
 
-func (vcr *ViewCachedRepository[T]) Count(ctx context.Context) (uint64, error) {
-	if vcr.count != 0 {
-		return vcr.count, nil
-	}
-	count, err := vcr.QueryRepositoryImpl.Count(ctx)
-	if err != nil {
-		return 0, err
-	}
-	vcr.updateCount(count)
-	return count, nil
-}
-
-func NewViewCachedRepository[T any](repository arp.QueryRepository[T]) arp.QueryRepository[T] {
-	return &ViewCachedRepository[T]{QueryRepositoryImpl: repository.(*arp.QueryRepositoryImpl[T])}
+func NewViewCachedRepository[T any](repository arp.Repository[T]) arp.Repository[T] {
+	return &ViewCachedRepository[T]{RepositoryImpl: repository.(*arp.RepositoryImpl[T])}
 }

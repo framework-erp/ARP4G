@@ -188,28 +188,6 @@ func NewRepository[T any](store Store[T], mutexes Mutexes, newZeroEntityFunc New
 	return repo
 }
 
-//包含常用的查询功能，复杂的查询请通过其他机制实现
-type QueryFuncs[T any] interface {
-	QueryAllIds(ctx context.Context) (ids []any, err error)
-	Count(ctx context.Context) (uint64, error)
-	QueryAllByField(ctx context.Context, fieldName string, fieldValue any) ([]T, error)
-}
-
-//包含一些常用查询功能的仓库，作为反CQRS（命令查询分离模式）设计，具有现实意义
-type QueryRepository[T any] interface {
-	Repository[T]
-	QueryFuncs[T]
-}
-
-type QueryRepositoryImpl[T any] struct {
-	*RepositoryImpl[T]
-	QueryFuncs[T]
-}
-
-func NewQueryRepository[T any](repository Repository[T], queryFuncs QueryFuncs[T]) QueryRepository[T] {
-	return &QueryRepositoryImpl[T]{repository.(*RepositoryImpl[T]), queryFuncs}
-}
-
 //保存的是一个不存在于某个集合当中的独立的实体。只在内存中，如需从数据库加载初始数据，则在系统启动时完成加载
 type SingletonRepository[T any] interface {
 	Get(ctx context.Context) (*T, error)
@@ -329,9 +307,4 @@ func (qf *MockQueryFuncs[T]) QueryAllByField(ctx context.Context, fieldName stri
 
 func NewMockRepository[T any](newZeroEntityFunc NewZeroEntity[T]) Repository[T] {
 	return NewRepository[T](NewMockStore[T](), NewMockMutexes(), newZeroEntityFunc)
-}
-
-func NewMockQueryRepository[T any](newZeroEntityFunc NewZeroEntity[T]) QueryRepository[T] {
-	mockRepo := (NewMockRepository(newZeroEntityFunc)).(*RepositoryImpl[T])
-	return &QueryRepositoryImpl[T]{mockRepo, &MockQueryFuncs[T]{}}
 }
