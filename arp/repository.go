@@ -147,7 +147,7 @@ func (repository *RepositoryImpl[T]) PutIfAbsent(ctx context.Context, id any, en
 func (repository *RepositoryImpl[T]) Remove(ctx context.Context, id any) (removed T, exists bool) {
 	entity, found := repository.Take(ctx, id)
 	if found {
-		RemoveEntityInProcess(ctx, repository.entityType, id, entity)
+		RemoveEntityInProcess(ctx, repository.entityType, id)
 		return entity, true
 	}
 	return removed, false

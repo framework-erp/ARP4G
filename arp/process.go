@@ -417,7 +417,7 @@ func PutNewEntityToProcess(ctx context.Context, entityType string, id any, entit
 	}
 }
 
-func RemoveEntityInProcess(ctx context.Context, entityType string, id any, entity any) {
+func RemoveEntityInProcess(ctx context.Context, entityType string, id any) {
 	pc, ok := getProcessContext(ctx)
 	if !ok {
 		return
